@@ -1,0 +1,32 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  email    String    @id @map("_id")
+  name     String
+  password String
+  picture  String    @default("https://icones.pro/wp-content/uploads/2021/02/icono-de-camara-gris.png")
+  chat     Chat[]
+  message  Message[]
+}
+
+model Chat {
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  fk_user_email String
+  user          User      @relation(fields: [fk_user_email], references: [email])
+  message       Message[]
+}
+
+model Message {
+  id            String @id @default(auto()) @map("_id") @db.ObjectId
+  fk_user_email String
+  fk_chat_id    String @db.ObjectId
+  user          User   @relation(fields: [fk_user_email], references: [email])
+  chat          Chat   @relation(fields: [fk_chat_id], references: [id])
+}
