@@ -6,10 +6,14 @@ import {
 	Param,
 	HttpStatus,
 	Res,
+	UploadedFile,
+	UseInterceptors,
 } from "@nestjs/common";
 import { MessageService } from "./message.service";
 import { CreateMessageDto } from "./dto/create-message.dto";
 import { Response } from "express";
+import { FileInterceptor } from "@nestjs/platform-express";
+import AWS from "src/services/aws";
 
 @Controller("message")
 export class MessageController {
@@ -18,18 +22,38 @@ export class MessageController {
 	@Post()
 	async create(
 		@Body() createMessageDto: CreateMessageDto,
-		@Res() res: Response,
+		@Res() res: Response
 	) {
 		try {
 			const result = await this.messageService.create(createMessageDto);
 
-			if (result) {
-				return res.status(HttpStatus.BAD_REQUEST).send({ msg: result });
-			}
+			if (typeof result == "string") return res.status(HttpStatus.BAD_REQUEST).send({ msg: result });
 
 			return res
 				.status(HttpStatus.CREATED)
-				.send({ msg: "Mensagem criada" });
+				.send(result);
+		} catch (error) {
+			return res
+				.status(HttpStatus.INTERNAL_SERVER_ERROR)
+				.send({ msg: error.message });
+		}
+	}
+
+	@Post("file")
+	@UseInterceptors(FileInterceptor("file", AWS.multerConfig))
+	async uploadArquivo(
+		@Body() createMessageDto: CreateMessageDto,
+		@UploadedFile() file: Express.MulterS3.File,
+		@Res() res: Response,
+	) {
+		createMessageDto.text = `file: ${file.location}`;
+		try {
+			const result =
+				await this.messageService.create(createMessageDto);
+
+			if (typeof result == "string") return res.status(HttpStatus.BAD_REQUEST).send({ msg: result });
+
+			return res.status(HttpStatus.CREATED).send(result);
 		} catch (error) {
 			return res
 				.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -38,12 +62,36 @@ export class MessageController {
 	}
 
 	@Get("/email/:email")
-	findAll(@Param("email") email: string) {
-		return this.messageService.findOne(email);
+	async findAll(@Param("email") email: string, @Res() res: Response) {
+		try {
+			const result = await this.messageService.findAll(email);
+
+			if (typeof result == "string") return res.status(HttpStatus.BAD_REQUEST).send({ msg: result });
+			
+			return res
+				.status(HttpStatus.OK)
+				.send(result);
+		} catch (error) {
+			return res
+				.status(HttpStatus.INTERNAL_SERVER_ERROR)
+				.send({ msg: error.message });
+		}
 	}
 
-	@Get("/time/:email")
-	findOne(@Param("email") email: string) {
-		return this.messageService.findOne(email);
+	@Get("/last/:email")
+	async findOne(@Param("email") email: string, @Res() res: Response) {
+		try {
+			const result = await this.messageService.findLastMessage(email);
+
+			if (typeof result == "string") return res.status(HttpStatus.BAD_REQUEST).send({ msg: result });
+			
+			return res
+				.status(HttpStatus.OK)
+				.send(result);
+		} catch (error) {
+			return res
+				.status(HttpStatus.INTERNAL_SERVER_ERROR)
+				.send({ msg: error.message });
+		}
 	}
 }

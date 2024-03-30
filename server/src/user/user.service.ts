@@ -31,9 +31,7 @@ export class UserService {
 				return "Já existe um usuário cadastrado com esse email";
 
 			const user = await this.prisma.user.create({
-				data: {
-					...createUserDto,
-				},
+				data: createUserDto
 			});
 
 			return user;
