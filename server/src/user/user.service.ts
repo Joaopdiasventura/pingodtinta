@@ -14,7 +14,7 @@ export class UserService {
 		try {
 			const user = await this.prisma.user.findUnique({
 				where: { email },
-			});			
+			});
 
 			if (!user) return "Usuário não encontrado";
 
@@ -43,23 +43,22 @@ export class UserService {
 		}
 	}
 
-	async login(loginUserDto: LoginUserDto):Promise<User | string>{
+	async login(loginUserDto: LoginUserDto): Promise<User | string> {
 		const user = await this.findUser(loginUserDto.email);
 		if (typeof user == "string") return user;
 
 		if (bcrypt.compare(user.password, loginUserDto.password)) return user;
 
 		return "Senha incorreta";
-
 	}
 
-	async updatePicture(updatePictureDto: UpdatePictureDto){
+	async updatePicture(updatePictureDto: UpdatePictureDto) {
 		const user = await this.findUser(updatePictureDto.email);
 		if (typeof user == "string") return user;
 
 		await this.prisma.user.update({
-			where: {email: updatePictureDto.email},
-			data:{picture: updatePictureDto.url_image}
+			where: { email: updatePictureDto.email },
+			data: { picture: updatePictureDto.url_image },
 		});
 		return;
 	}

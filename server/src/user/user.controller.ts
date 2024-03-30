@@ -13,12 +13,12 @@ import {
 } from "@nestjs/common";
 import { UserService } from "./user.service";
 import { CreateUserDto } from "./dto/create-user.dto";
-import { FastifyReply } from "fastify";
 import Jwt from "../services/jwt";
 import { LoginUserDto } from "./dto/login-user.dto";
 import { FileInterceptor } from "@nestjs/platform-express";
-import multerConfig from "../services/aws";
 import UpdatePictureDto from "./dto/update-picture";
+import { Response } from "express";
+import AWS from "../services/aws";
 
 @Controller("user")
 export class UserController {
@@ -28,10 +28,7 @@ export class UserController {
 	) {}
 
 	@Post("register")
-	async create(
-		@Body() createUserDto: CreateUserDto,
-		@Res() res: FastifyReply,
-	) {
+	async create(@Body() createUserDto: CreateUserDto, @Res() res: Response) {
 		createUserDto.password = bcrypt.hashSync(createUserDto.password, 10);
 		const result = await this.userService.create(createUserDto);
 
@@ -44,7 +41,7 @@ export class UserController {
 	}
 
 	@Post("login")
-	async login(@Body() loginUserDto: LoginUserDto, @Res() res: FastifyReply) {
+	async login(@Body() loginUserDto: LoginUserDto, @Res() res: Response) {
 		const result = await this.userService.login(loginUserDto);
 		if (typeof result == "string")
 			return res.status(HttpStatus.BAD_REQUEST).send({ msg: result });
@@ -55,7 +52,7 @@ export class UserController {
 	}
 
 	@Get("/decode/:token")
-	async decode(@Param("token") token: string, @Res() res: FastifyReply) {
+	async decode(@Param("token") token: string, @Res() res: Response) {
 		const email = this.jwt.decode(token);
 		const result = await this.userService.findUser(email.toString());
 
@@ -66,20 +63,26 @@ export class UserController {
 	}
 
 	@Put("update")
-	@UseInterceptors(FileInterceptor("file", multerConfig))
-	async uploadArquivo(@Body() updatePictureDto: UpdatePictureDto, @UploadedFile() file: Express.MulterS3.File) {
+	@UseInterceptors(FileInterceptor("file", AWS.multerConfig))
+	async uploadArquivo(
+		@Body() updatePictureDto: UpdatePictureDto,
+		@UploadedFile() file: Express.MulterS3.File,
+		@Res() res: Response,
+	) {
 		updatePictureDto.url_image = file.location;
 		try {
-			const result = await this.userService.updatePicture(updatePictureDto);
+			const result =
+				await this.userService.updatePicture(updatePictureDto);
 
 			if (result) {
-				return result;
+				return res.status(HttpStatus.BAD_REQUEST).send({ msg: result });
 			}
 
-			return "FOTO ATUALIZADA"
+			return res.status(HttpStatus.OK).send({ msg: "Foto Atualizada" });
 		} catch (error) {
-			console.log(error);
-			
+			return res
+				.status(HttpStatus.INTERNAL_SERVER_ERROR)
+				.send({ msg: error.message });
 		}
 	}
 }

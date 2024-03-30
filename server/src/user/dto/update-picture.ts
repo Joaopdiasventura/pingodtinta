@@ -1,4 +1,4 @@
-export default class UpdatePictureDto{
-    url_image: string;
-    email: string;
+export default class UpdatePictureDto {
+	url_image: string;
+	email: string;
 }
