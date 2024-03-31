@@ -62,6 +62,16 @@ export class UserController {
 		return res.status(HttpStatus.OK).send(result);
 	}
 
+	@Get("/email/:email")
+	async findUser(@Param("email") email: string, @Res() res: Response){
+		const result = await this.userService.findUser(email);
+
+		if (typeof result == "string")
+			return res.status(HttpStatus.BAD_REQUEST).send({ msg: result });
+
+		return res.status(HttpStatus.OK).send(result);
+	}
+
 	@Put("update")
 	@UseInterceptors(FileInterceptor("file", AWS.multerConfig))
 	async uploadArquivo(
